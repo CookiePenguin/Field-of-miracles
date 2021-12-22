@@ -51,8 +51,7 @@ def start_screen():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
-            elif event.type == pygame.KEYDOWN or \
-                    event.type == pygame.MOUSEBUTTONDOWN:
+            elif event.type == pygame.KEYDOWN:
                 return  # начинаем игру
         pygame.display.flip()
         clock.tick(FPS)
@@ -103,7 +102,6 @@ class difficulty_selection:  # выбор сложности
         n_y = 350
 
         self.customizable_coords = (n_x, n_y, width // 3 - 50, height // 2)
-        print(self.customizable_coords)
         pygame.draw.rect(screen, 'Blue', self.customizable_coords)
 
         self.normal_coords = (n_x + width // 3, n_y, width // 3 - 50, height // 2)
@@ -127,7 +125,7 @@ class difficulty_selection:  # выбор сложности
             clock.tick(FPS)
 
 
-# start_screen()
+start_screen()
 difficulty_selection().render(screen)
 
 running = True
