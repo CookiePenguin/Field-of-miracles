@@ -57,8 +57,7 @@ def start_screen():
         clock.tick(FPS)
 
 
-class difficulty_selection:  # выбор сложности
-
+class Difficulty_selection:  # выбор сложности
     def get_click(self, mouse_pos):
         x, y = mouse_pos
         # приобразование для упращения
@@ -67,17 +66,19 @@ class difficulty_selection:  # выбор сложности
         h0, h1, h2, h3 = self.hard_coords
         # определение на какую клавишу нажато
         if x in range(c0, c0 + c2) and y in range(c1, c1 + c3):
-            return 'customizable_coords'
+            return "Собственная сложность"
         if x in range(n0, n0 + n2) and y in range(n1, n1 + n3):
-            return 'normal_coords'
+            return "Средняя сложность"
         if x in range(h0, h0 + h2) and y in range(h1, h1 + h3):
-            return 'hard_coords'
+            return "Хард кооооооооорррр!!!"
         else:
-            return 'Выберите одну из сложностей'
+            return 0
 
     def render(self, screen):
         fon = pygame.transform.scale(load_image('fon1.jpg'), (width, height))  # Создание фона
         screen.blit(fon, (0, 0))
+
+        # Абсолютно всё прописание текста нужно отредактировать под размеры окна
 
         font_rule = pygame.font.Font(None, 75)  # настройка размера шрифта
         string_rendered = font_rule.render("Правила игры", True, pygame.Color('white'))
@@ -116,9 +117,8 @@ class difficulty_selection:  # выбор сложности
                     terminate()
                 elif event.type == pygame.MOUSEBUTTONUP:
                     complexity = self.get_click(event.pos)
-                    if complexity != 'Выберите одну из сложностей':
-                        print(complexity)
-                        return  # начинаем игру
+                    if complexity != 0:
+                        return complexity  # Задаем сложность и начинаем игру
                     else:
                         print('Выберите одну из сложностей')
             pygame.display.flip()
@@ -126,14 +126,46 @@ class difficulty_selection:  # выбор сложности
 
 
 start_screen()
-difficulty_selection().render(screen)
+hard = Difficulty_selection().render(screen)
+
+
+def test(screen, poke=" "):  # Функция отображения вводимых данных
+    screen.fill((0, 0, 0))
+    font = pygame.font.Font(None, 50)
+    text = font.render(poke, True, (100, 255, 100))
+    text_x = width // 2 - text.get_width() // 2
+    text_y = height // 2 - text.get_height() // 2
+    text_w = text.get_width()
+    text_h = text.get_height()
+    screen.blit(text, (text_x, text_y))
+    pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
+                                           text_w + 20, text_h + 20), 1)
+
+
+text = ""
+test(screen)
+
+font = pygame.font.Font(None, 50)
+text_hard = font.render(hard, True, (100, 255, 100))
+
+ru_letters = 'йцукенгшщзхъфывапролджэячсмитьбюЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'
 
 running = True
 while running:
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
             running = False
-    screen.fill(pygame.Color("black"))
+        elif event.type == pygame.KEYDOWN:
+            if event.key == pygame.K_BACKSPACE:
+                q = len(text)
+                text = text[:q - 1]
+                test(screen, text)
+            elif event.unicode in ru_letters:
+                text += event.unicode
+                test(screen, text)
+            else:
+                print('Можно вводить только русские буквы')
+    screen.blit(text_hard, (20, 20))
     pygame.display.flip()
     clock.tick(50)
 
