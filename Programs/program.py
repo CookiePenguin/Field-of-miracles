@@ -4,6 +4,7 @@ import sys
 import pygame
 
 pygame.init()
+# 1200 800
 size = width, height = 1200, 800
 screen = pygame.display.set_mode(size)
 SCREEN = screen
@@ -44,22 +45,15 @@ def create_particles(position, grav=1):
         Particle(position, random.choice(numbers), random.choice(numbers), grav)
 
 
-def start_screen():
-    fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))  # Создание фона
+def start_screen():  # стартовое окно загрузки
+    # создание фона
+    fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
     screen.blit(fon, (0, 0))
 
-    intro_text = ["(для продолжения нажмите любую клавишу)"]
-    font = pygame.font.Font(None, 50)  # настройка размера шрифта
-    text_coord = 730
-    for line in intro_text:
-        string_rendered = font.render(line, 1, pygame.Color('white'))
-        intro_rect = string_rendered.get_rect()
-        text_coord += 10
-        intro_rect.top = text_coord
-        intro_rect.x = height // 2 - 175
-        text_coord += intro_rect.height
-        screen.blit(string_rendered, intro_rect)
-
+    # настройка надписи
+    font = pygame.font.Font(None, 50)
+    text = font.render("(для продолжения нажмите любую клавишу)", 1, pygame.Color('white'))
+    text_rect = text.get_rect(center=(width / 2, height - 50))
     while True:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -73,7 +67,7 @@ def start_screen():
         all_sprites.update()
         screen.fill((0, 0, 0))
         screen.blit(fon, (0, 0))
-        screen.blit(string_rendered, intro_rect)
+        screen.blit(text, text_rect)
         all_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
@@ -110,7 +104,7 @@ class Particle(pygame.sprite.Sprite):
             self.kill()
 
 
-class Difficulty_selection:  # выбор сложности
+class Difficulty_selection:  # 2 окно выбора сложности
     def get_click(self, mouse_pos):
         x, y = mouse_pos
         # приобразование для упращения
@@ -128,43 +122,111 @@ class Difficulty_selection:  # выбор сложности
             return 0
 
     def render(self, screen):
-        fon = pygame.transform.scale(load_image('fon1.jpg'), (width, height))  # Создание фона
+        # создание фона
+        fon = pygame.transform.scale(load_image('fon1.jpg'), (width, height))
         screen.blit(fon, (0, 0))
 
         # Абсолютно всё прописание текста нужно отредактировать под размеры окна
 
-        font_rule = pygame.font.Font(None, 75)  # настройка размера шрифта
-        string_rendered = font_rule.render("Правила игры", True, pygame.Color('white'))
-        screen.blit(string_rendered, (440, 50))
+        # настройка текста
+        font_rule2 = pygame.font.Font(None, 70)
+        rulle_text2 = font_rule2.render("Чтобы прочитать правила нажмите клавишу [P]", True, pygame.Color('white'))
+        rulle_cord2 = rulle_text2.get_rect(center=(width / 2, height - 100))
+        screen.blit(rulle_text2, rulle_cord2)
 
-        rules_text = ["Отгадывайте слова",
-                      "Получайте баллы",
-                      "Выигрывайте призы!"]
-        font_rules = pygame.font.Font(None, 50)
-        text_coord = 50
-        for line in rules_text:
-            string_rendered = font_rules.render(line, 1, pygame.Color('white'))
-            intro_rect = (text_coord, 150)
-            text_coord += 350
+        font_rule3 = pygame.font.Font(None, 100)
+        hard_text = font_rule3.render("Выбор сложности", True, pygame.Color('white'))
+        hard_cord = hard_text.get_rect(center=(width / 2, 150))
+        screen.blit(hard_text, hard_cord)
+
+        # прорисовка кнопок сложности
+        # константы
+        n_x = 25
+        n_y = 250
+        const = width // 3 - 50
+        font_button_text = pygame.font.Font(None, 40)
+        # синяя кнопка
+        self.customizable_coords = (n_x, n_y, const, const)
+        pygame.draw.rect(screen, 'Blue', self.customizable_coords)
+        B_button_text = ["Сохранение",
+                         "",
+                         ""]
+        text_coord = n_y + const / 4
+        for line in B_button_text:
+            string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect(center=((n_x + (const / 2), text_coord)))
+            text_coord += 40
+            screen.blit(string_rendered, intro_rect)
+        # оранжевая кнопка
+        self.normal_coords = (n_x + width // 3, n_y, const, const)
+        pygame.draw.rect(screen, 'Orange', self.normal_coords)
+        O_button_text = ["Средняя сложность",
+                         "Время ответа",
+                         "Другие игроки",
+                         "Множитель очков", ]
+        text_coord = n_y + const / 4
+        for line in O_button_text:
+            string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect(center=(width / 2, text_coord))
+            text_coord += 50
+            screen.blit(string_rendered, intro_rect)
+        # красная кнопка
+        self.hard_coords = (n_x + (width // 3 * 2), n_y, const, const)
+        pygame.draw.rect(screen, 'Red', self.hard_coords)
+        R_button_text = ["ХАРД КОР",
+                         "Время ответа",
+                         "Другие игроки",
+                         "Множитель очков", ]
+        text_coord = n_y + const / 4
+        for line in R_button_text:
+            string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
+            intro_rect = string_rendered.get_rect(center=((n_x + (width // 3 * 2)) + const / 2, text_coord))
+            text_coord += 50
             screen.blit(string_rendered, intro_rect)
 
-        font_rule = pygame.font.Font(None, 75)  # настройка размера шрифта
-        string_rendered = font_rule.render("Выбор сложности", True, pygame.Color('white'))
-        screen.blit(string_rendered, (375, 250))
+    def rules(self):
+        # настройка надписей
+        font_rule = pygame.font.Font(None, 100)
+        rulle_text1 = font_rule.render("Правила игры", True, pygame.Color('red'))
+        rulle_cord1 = rulle_text1.get_rect(center=(width / 2, 150))
 
-        n_x = 25
-        n_y = 350
+        font1 = pygame.font.Font(None, 50)
+        text = font1.render("(для продолжения нажмите любую клавишу)", 1, pygame.Color('red'))
+        text_rect = text.get_rect(center=(width / 2, height - 100))
 
-        self.customizable_coords = (n_x, n_y, width // 3 - 50, height // 2)
-        pygame.draw.rect(screen, 'Blue', self.customizable_coords)
+        screen.fill("#a7d4d0")
+        screen.blit(rulle_text1, rulle_cord1)
+        screen.blit(text, text_rect)
 
-        self.normal_coords = (n_x + width // 3, n_y, width // 3 - 50, height // 2)
-        pygame.draw.rect(screen, 'Orange', self.normal_coords)
+        intro_text = ["Вначале каждого раунда Вам необходимо выбрать уровень и тему вопросов.",
+                      "Каждый раунд игры состоит из 5 вопросов, посвященных выбранной теме.",
+                      "На экран выводится вопрос, ответ на который (загаданное слово) скрыт на табло.",
+                      "Длина слова известна - каждая скрытая буква отображена на поле квадратиками.",
+                      "Выбор буквы осуществляется наведением курсора на соответствующую букву",
+                      "и нажатием левой кнопки мыши.",
+                      "Если выбранная буква есть в загаданном слове, то она будет открыта.",
+                      "Если Вы знаете ответ - полное слово, то введите его в поле для ввода ответа",
+                      "и нажмите кнопку Проверить.",
+                      "Основная задача игрока - угадать загаданное слово раньше соперников."]
 
-        self.hard_coords = (n_x + (width // 3 * 2), n_y, width // 3 - 50, height // 2)
-        pygame.draw.rect(screen, 'Red', self.hard_coords)
+        font2 = pygame.font.Font(None, 35)
+        text_coord = 250
+        for line in intro_text:
+            string_rendered = font2.render(line, 1, pygame.Color('black'))
+            intro_rect = string_rendered.get_rect(center=(width / 2, text_coord))
+            text_coord += 40
+            screen.blit(string_rendered, intro_rect)
+        # цикл отрисовки
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    terminate()
+                elif event.type == pygame.KEYDOWN:
+                    return  # начинаем игру
+            pygame.display.flip()
+            clock.tick(FPS)
 
-    def start(self, screen):
+    def start(self, screen):  # функция запускающая другие функции
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -175,9 +237,13 @@ class Difficulty_selection:  # выбор сложности
                 elif event.type == pygame.MOUSEBUTTONUP:
                     complexity = self.get_click(event.pos)
                     if complexity != 0:
-                        return complexity  # Задаем сложность и начинаем игру
+                        # Задаем сложность и начинаем игру
+                        return complexity
                     else:
                         print('Выберите одну из сложностей')
+                if event.type == pygame.KEYDOWN:
+                    if event.key == 112:
+                        self.rules()
             all_sprites.update()
             screen.fill((0, 0, 0))
             self.render(screen)
@@ -190,7 +256,7 @@ start_screen()
 hard = Difficulty_selection().start(screen)
 
 
-def test(screen, poke=" "):  # Функция отображения вводимых данных
+def test(screen, poke=" "):  # тестовая функция отображения вводимых данных
     screen.fill((0, 0, 0))
     font = pygame.font.Font(None, 50)
     text = font.render(poke, True, (100, 255, 100))
