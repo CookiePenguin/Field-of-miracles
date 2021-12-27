@@ -1,13 +1,17 @@
 import os
+import random
 import sys
 import pygame
 
 pygame.init()
 size = width, height = 1200, 800
 screen = pygame.display.set_mode(size)
+SCREEN = screen
 pygame.display.set_caption('Игра Поле чудес!')
 clock = pygame.time.Clock()
 FPS = 50
+screen_rect = (0, 0, width, height)
+all_sprites = pygame.sprite.Group()
 
 
 def load_image(name, colorkey=None):
@@ -31,6 +35,15 @@ def terminate():
     sys.exit()
 
 
+def create_particles(position, grav=1):
+    # количество создаваемых частиц
+    particle_count = 20
+    # возможные скорости
+    numbers = range(-5, 6)
+    for _ in range(particle_count):
+        Particle(position, random.choice(numbers), random.choice(numbers), grav)
+
+
 def start_screen():
     fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))  # Создание фона
     screen.blit(fon, (0, 0))
@@ -51,10 +64,50 @@ def start_screen():
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 terminate()
+            if event.type == pygame.MOUSEBUTTONDOWN:
+                # создаём частицы по щелчку мыши
+                create_particles(pygame.mouse.get_pos())
             elif event.type == pygame.KEYDOWN:
                 return  # начинаем игру
+
+        all_sprites.update()
+        screen.fill((0, 0, 0))
+        screen.blit(fon, (0, 0))
+        screen.blit(string_rendered, intro_rect)
+        all_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
+
+
+class Particle(pygame.sprite.Sprite):
+    # сгенерируем частицы разного размера
+    fire = [load_image("star.png")]
+    for scale in (5, 10, 20):
+        fire.append(pygame.transform.scale(fire[0], (scale, scale)))
+
+    def __init__(self, pos, dx, dy, GRAVITY=1):
+        super().__init__(all_sprites)
+        self.image = random.choice(self.fire)
+        self.rect = self.image.get_rect()
+
+        # у каждой частицы своя скорость — это вектор
+        self.velocity = [dx, dy]
+        # и свои координаты
+        self.rect.x, self.rect.y = pos
+
+        # гравитация будет одинаковой (значение константы)
+        self.gravity = GRAVITY
+
+    def update(self):
+        # применяем гравитационный эффект:
+        # движение с ускорением под действием гравитации
+        self.velocity[1] += self.gravity
+        # перемещаем частицу
+        self.rect.x += self.velocity[0]
+        self.rect.y += self.velocity[1]
+        # убиваем, если частица ушла за экран
+        if not self.rect.colliderect(screen_rect):
+            self.kill()
 
 
 class Difficulty_selection:  # выбор сложности
@@ -111,22 +164,30 @@ class Difficulty_selection:  # выбор сложности
         self.hard_coords = (n_x + (width // 3 * 2), n_y, width // 3 - 50, height // 2)
         pygame.draw.rect(screen, 'Red', self.hard_coords)
 
+    def start(self, screen):
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     terminate()
+                if event.type == pygame.MOUSEBUTTONDOWN:
+                    # создаём частицы по щелчку мыши
+                    create_particles(pygame.mouse.get_pos(), 2)
                 elif event.type == pygame.MOUSEBUTTONUP:
                     complexity = self.get_click(event.pos)
                     if complexity != 0:
                         return complexity  # Задаем сложность и начинаем игру
                     else:
                         print('Выберите одну из сложностей')
+            all_sprites.update()
+            screen.fill((0, 0, 0))
+            self.render(screen)
+            all_sprites.draw(screen)
             pygame.display.flip()
             clock.tick(FPS)
 
 
 start_screen()
-hard = Difficulty_selection().render(screen)
+hard = Difficulty_selection().start(screen)
 
 
 def test(screen, poke=" "):  # Функция отображения вводимых данных
