@@ -293,7 +293,10 @@ class Window_game:
             text_coord += 40
             screen.blit(string_rendered, intro_rect)
 
-    def test(self, screen, poke=" "):  # тестовая функция отображения вводимых данных
+    def test(self, screen, poke=" "):
+        text = ""
+        font = pygame.font.Font(None, 50)
+        text_hard = font.render(hard, True, (100, 255, 100))       
         font = pygame.font.Font(None, 50)
         text = font.render(poke, True, (100, 255, 100))
         text_x = width // 2 - text.get_width() // 2
@@ -343,27 +346,7 @@ gamme()
 
 
 
-def test(screen, poke=" "):  # тестовая функция отображения вводимых данных
-    screen.fill((0, 0, 0))
-    font = pygame.font.Font(None, 50)
-    text = font.render(poke, True, (100, 255, 100))
-    text_x = width // 2 - text.get_width() // 2
-    text_y = height // 2 - text.get_height() // 2
-    text_w = text.get_width()
-    text_h = text.get_height()
-    screen.blit(text, (text_x, text_y))
-    pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
-                                           text_w + 20, text_h + 20), 1)
-
-
-text = ""
-test(screen)
-
-font = pygame.font.Font(None, 50)
-text_hard = font.render(hard, True, (100, 255, 100))
-
-ru_letters = 'йцукенгшщзхъфывапролджэячсмитьбюЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'
-
+ ru_letters = 'йцукенгшщзхъфывапролджэячсмитьбюЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'
 
 
 running = True
