@@ -168,9 +168,7 @@ class Difficulty_selection:  # 2 окно выбора сложности
         # красная кнопка
         self.hard_coords = (n_x + (width // 3 * 2), n_y, const, const)
         pygame.draw.rect(screen, 'Red', self.hard_coords)
-        R_button_text = ["ХАРД КОР",
-                         "Время ответа",
-                         "Другие игроки" ]
+        R_button_text = ["Правила" ]
         text_coord = n_y + const / 4
         for line in R_button_text:
             string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
