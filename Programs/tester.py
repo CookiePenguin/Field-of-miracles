@@ -4,7 +4,7 @@ import sys
 import pygame
 import sqlite3
 from random import sample
-# i like cat
+# i like cat222
 pygame.init()
 size = width, height = 1200, 800
 screen = pygame.display.set_mode(size)
