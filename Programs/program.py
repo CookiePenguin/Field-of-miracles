@@ -297,7 +297,7 @@ picture1 = pygame.transform.scale(picture_1, (75, 75))
 picture_2 = load_image(photo_spusok_name[spusok_name[random_number[1]]])
 picture2 = pygame.transform.scale(picture_2, (75, 75))
 
-ru_letters = 'йцукенгшщзхъфывапролджэячсмитьбюЙЦУКЕНГШЩЗХЪФЫВАПРОЛДЖЭЯЧСМИТЬБЮ'
+ru_letters = 'йцукенгшщзхъфывапролджэячсмитьбюАБВГДЕЁЖЗИЙКЛМНОПРСТУФХЦЧШЩЪЬЫЭЮЯ'
 
 
 class Window_game:  # Основное окно игры
@@ -313,6 +313,9 @@ class Window_game:  # Основное окно игры
         self.left = 200
         self.top = 100
         self.cell_size = 50
+        self.bykva = ""
+        self.x1 = 0
+        self.y1 = 0
 
     def render_field(self, screen):  # рендер окна
         # Рисуем основное поле с загаданным словом
@@ -341,40 +344,40 @@ class Window_game:  # Основное окно игры
         exit_picture = pygame.transform.scale(exit_picture, (85, 40))
         screen.blit(exit_picture, (0, 0))
         self.rect = pygame.Rect(0, 0, 85, 40)
-        # Рисовка поля с выбором буквы или вводом словом целиком
+        # Рисовка поля с выбором буквы или вводом слова целиком
         pygame.draw.rect(screen, (102, 0, 255), (200, 450, 520, 325), 5)
-        slovar = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й']
-        slovar2 = ['К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф']
-        slovar3 = ['Х', 'Ц', 'Ч', 'Ш', 'Щ', "Ъ", "Ь", "Ы", "Э", "Ю", "Я"]
+        self.slovar = ['А', 'Б', 'В', 'Г', 'Д', 'Е', 'Ё', 'Ж', 'З', 'И', 'Й']
+        self.slovar2 = ['К', 'Л', 'М', 'Н', 'О', 'П', 'Р', 'С', 'Т', 'У', 'Ф']
+        self.slovar3 = ['Х', 'Ц', 'Ч', 'Ш', 'Щ', "Ъ", "Ь", "Ы", "Э", "Ю", "Я"]
         a, b, c = 220, 220, 220
-        for i in slovar:
+        for i in self.slovar:
             pygame.draw.rect(screen, (102, 0, 255), (a, 505, 35, 35), 3)
             font = pygame.font.Font(None, 35)
             text_start = font.render(i, False, (255, 255, 255))
             screen.blit(text_start, (a + 10, 510))
+            #            self.choose_letter = pygame.Rect(a + 10, 510)
             a += 45
-        for i in slovar2:
+        for i in self.slovar2:
             pygame.draw.rect(screen, (102, 0, 255), (b, 555, 35, 35), 3)
             font = pygame.font.Font(None, 35)
             text_start = font.render(i, False, (255, 255, 255))
             screen.blit(text_start, (b + 10, 560))
             b += 45
-        for i in slovar3:
+        for i in self.slovar3:
             pygame.draw.rect(screen, (102, 0, 255), (c, 605, 35, 35), 3)
             font = pygame.font.Font(None, 35)
             text_start = font.render(i, False, (255, 255, 255))
             screen.blit(text_start, (c + 10, 610))
             c += 45
         text_input_word = 'Скажите букву или слово целиком'
-        font = pygame.font.Font(None, 30)
-        text_input = font.render(text_input_word, False, (0, 0, 0))
+        font = pygame.font.SysFont('Consolas', 20)
+        text_input = font.render(text_input_word, 3, (0, 0, 0))
         screen.blit(text_input, (290, 465))
         pygame.draw.rect(screen, (255, 255, 255), (400, 715, 125, 45), 0)
         btn_text_input_word = 'Ответить'
         font = pygame.font.Font(None, 30)
         btn_text_input = font.render(btn_text_input_word, False, (0, 0, 0))
         screen.blit(btn_text_input, (415, 730))
-
 
     def question_and_word(self, screen):  # Вывод вопроса и слова на экран
         # Из базы данных отбираем записи (слова и вопросы)
@@ -434,36 +437,25 @@ class Window_game:  # Основное окно игры
     def do_hints(self, screen):  # подсказки
         # Добрыми словами встречаем игрока
         self.text_main_clue = 'Тройка игроков в студию!'
-        font = pygame.font.Font(None, 45)
-        text_clue = font.render(self.text_main_clue, False, (0, 0, 0))
+        font = pygame.font.SysFont('Arial Black', 28)
+        text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+        if self.flag == 0:
+            screen.blit(text_clue, (400, 355))
         # Продожить игру можно при нажатие на клавиатуре R
         text_exit_start = 'Чтобы продолжить нажмите клавишу [R]'
-        font = pygame.font.Font(None, 25)
-        text_start = font.render(text_exit_start, False, (159, 129, 112))
+        font = pygame.font.SysFont("Aria", 25)
+        text_start = font.render(text_exit_start, 1, (159, 129, 112))
         screen.blit(text_start, (430, 400))
         if self.flag == 1:
-            self.text_main_clue = f'Вращайте барабан {spusok_name[random_number[0]]}'
-            font = pygame.font.Font(None, 45)
-            text_clue = font.render(self.text_main_clue, False, (0, 0, 0))
-            screen.blit(text_clue, (400, 365))
-        if self.flag == 0:
-            screen.blit(text_clue, (400, 365))
-        self.maxx = len(self.word) // 2
-        if self.maxx > 4:
-            self.maxx = 4
-        if self.maxx == 1:
-            self.strmaxx = 'одну букву'
-        if self.maxx == 2:
-            self.strmaxx = 'две буквы'
-        if self.maxx == 3:
-            self.strmaxx = 'три буквы'
-        if self.maxx == 4:
-            self.strmaxx = 'четыре буквы'
-        self.text_main_clue = 'Вы можете открыть ' + self.strmaxx + ' или сразу написать ответ!'
-        font = pygame.font.Font(None, 35)
-        text_clue = font.render(self.text_main_clue, False, (0, 0, 0))
+            self.text_main_clue = f'{spusok_name[random_number[0]]}, вращайте барабан'
+            font = pygame.font.SysFont('Arial Black', 28)
+            text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+            screen.blit(text_clue, (400, 355))
+        self.text_main_clue = 'Выберите букву'
+        font = pygame.font.SysFont('Arial Black', 24)
+        text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
         if self.flag == 2:
-            screen.blit(text_clue, (235, 365))
+            screen.blit(text_clue, (495, 355))
 
     # def btn_next_question(self, screen):
     #    pygame.draw.rect(screen, (102, 0, 255), (1000, 0, 225, 50), 0)
@@ -474,18 +466,31 @@ class Window_game:  # Основное окно игры
 
     def open_letter(self, screen):
         slovo = ''
+        print(self.word)
         for r in range(len(self.word)):
-            if self.word[r] == self.bykva:
+            if self.word[r] == self.bykva.lower():
                 slovo = slovo + self.bykva
             else:
                 slovo = slovo + self.word_guessed[r]
         self.word_guessed = slovo
-        #   text_coord = 8 - len(self.word) // 2
+        print(self.word_guessed)
+        text_coord = 225
         for i in range(0, len(self.word)):
-            font = pygame.font.Font(None, 60)
-            string_rendered = font.render(self.word_guessed[i], 1, pygame.Color("black"))
-            intro_rect = string_rendered.get_rect(center=(955 / 2, 225))
-            screen.blit(string_rendered, intro_rect)
+            font = pygame.font.SysFont("Aria Black", 45)
+            text_word_guessed = font.render(self.word_guessed[i], 1, (0, 0, 0))
+            intro_rect = text_word_guessed.get_rect(center=(955 / 2, text_coord))
+            screen.blit(text_word_guessed, intro_rect)
+        pygame.draw.line(screen, (255, 3, 62), (self.x1, self.y1),
+                         (self.x1 + 35, self.y1 + 35), 3)
+        pygame.draw.line(screen, (255, 3, 62), (self.x1, self.y1 + 35),
+                         (self.x1 + 35, self.y1), 3)
+
+    #  screen.blit(text_word_guessed, (20, ))
+    # for i in range(0, len(self.word)):
+    # font = pygame.font.Font(None, 60)
+    # string_rendered = font.render(self.word_guessed[i], 1, pygame.Color("black"))
+    # intro_rect = string_rendered.get_rect(center=(955 / 2, 225))
+    # screen.blit(string_rendered, intro_rect)
 
     def bots(self):  # Отображаем на эране оботов (аватарка + никнейм)
         # Рисуем фон аватарки
@@ -502,13 +507,13 @@ class Window_game:  # Основное окно игры
         rect = rect.move((40, 650))
         screen.blit(picture2, rect)
         # Подписываем
-        font = pygame.font.Font(None, 25)
-        text = font.render(spusok_name[random_number[0]], False, (0, 0, 0))
-        screen.blit(text, (50, 450))
+        font = pygame.font.SysFont('Arial Black', 16)
+        text = font.render(spusok_name[random_number[0]], 1, (0, 0, 0))
+        screen.blit(text, (45, 450))
 
-        font = pygame.font.Font(None, 25)
-        text = font.render(spusok_name[random_number[1]], False, (0, 0, 0))
-        screen.blit(text, (50, 615))
+        font = pygame.font.SysFont('Arial Black', 16)
+        text = font.render(spusok_name[random_number[1]], 1, (0, 0, 0))
+        screen.blit(text, (45, 615))
         # Отображаем счётчик баллов батов
         pygame.draw.rect(screen, (102, 0, 255), (35, 575, 75, 25), 0)
         pygame.draw.rect(screen, (102, 0, 255), (35, 740, 75, 25), 0)
@@ -519,6 +524,7 @@ class Window_game:  # Основное окно игры
         font = pygame.font.Font(None, 35)
         text = font.render(str(self.col_mark_2_robot), False, (255, 204, 0))
         screen.blit(text, (45, 742))
+        # Оживляем ботов, создаём список русского алфавита, из которого боты будут выбирать вырианты ответов
 
     def scoring(self, angle):  # Подсчёт баллов за уровень
         if angle == 5 or angle == 185: return 'Б'
@@ -544,6 +550,9 @@ class Window_game:  # Основное окно игры
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             terminate()
+        if event.type == pygame.KEYDOWN:
+            if event.key == 114 or event.key == 82:
+                self.flag += 1
         x, y = pygame.mouse.get_pos()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
@@ -551,18 +560,38 @@ class Window_game:  # Основное окно игры
                     #  all_sprites.kill()
                     screen_name = name_screens["Second window"]
                     main_game(screen_name)
-        if event.type == pygame.KEYDOWN:
-            if event.key == 114 or event.key == 82:
-                self.flag += 1
-           # if event.key == pygame.K_BACKSPACE:
-            #    q = len(self.text)
-             #   self.text = self.text[:q - 1]
-              #  self.test(self, screen, self.text)
-             #elif event.unicode in ru_letters:
-              #  self.text += event.unicode
-               # self.test(sellf, screen, self.text)
-           # else:
-            #    print('Можно вводить только русские буквы')
+            print(event.pos)
+            if (510 <= event.pos[1] <= 645 and 230 <= event.pos[0] <= 715):
+                index_num_b = (event.pos[0] - 220 - 10) // 45
+                print(index_num_b)
+                if (event.pos[0] > 220 + ((index_num_b + 1) * 45) or \
+                        545 < event.pos[1] < 560 or 595 < event.pos[1] < 610):
+                    self.bykva = " "
+                else:
+                    self.x1 = 220 + index_num_b * 45
+                    if 510 <= event.pos[1] <= 545:
+                        self.bykva = self.slovar[index_num_b]
+                        self.y1 = 505
+                    if 560 <= event.pos[1] <= 595:
+                        self.bykva = self.slovar2[index_num_b]
+                        self.y1 = 555
+                    if 610 <= event.pos[1] <= 645:
+                        self.bykva = self.slovar3[index_num_b]
+                        self.y1 = 605
+            else:
+                self.bykva = ' '
+            print(self.bykva)
+
+        #   if event.key == pygame.K_BACKSPACE:
+
+        #    q = len(self.text)
+        #   self.text = self.text[:q - 1]
+        #  self.test(self, screen, self.text)
+        # elif event.unicode in ru_letters:
+        #  self.text += event.unicode
+        # self.test(sellf, screen, self.text)
+        # else:
+        #    print('Можно вводить только русские буквы')
         if "Вращайте" in self.text_main_clue:
             if self.t + 60 > 355:
                 self.t = 5
@@ -577,6 +606,7 @@ class Window_game:  # Основное окно игры
         self.render_field(screen)
         self.do_hints(screen)
         self.bots()
+        self.open_letter(screen)
         all_sprites.draw(screen)
         # Рисуем курсор для барабана
         poligon_points = [(750, 600), (750, 700), (875, 650)]
