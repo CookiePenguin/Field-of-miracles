@@ -316,6 +316,7 @@ class Window_game:  # Основное окно игры
         self.bykva = ""
         self.x1 = 0
         self.y1 = 0
+        self.flag_input_word = False
 
     def render_field(self, screen):  # рендер окна
         # Рисуем основное поле с загаданным словом
@@ -378,6 +379,7 @@ class Window_game:  # Основное окно игры
         font = pygame.font.Font(None, 30)
         btn_text_input = font.render(btn_text_input_word, False, (0, 0, 0))
         screen.blit(btn_text_input, (415, 730))
+        self.btn_answer = pygame.Rect(400, 715, 125, 45)
 
     def question_and_word(self, screen):  # Вывод вопроса и слова на экран
         # Из базы данных отбираем записи (слова и вопросы)
@@ -423,16 +425,16 @@ class Window_game:  # Основное окно игры
                              (j * self.cell_size + self.left, 2 * self.cell_size + self.top, self.cell_size,
                               self.cell_size), 0)
 
-    def test(self, screen, poke=" "):  # функция отображения вводимых данных
+    def test(self):  # функция отображения вводимых данных
         font = pygame.font.Font(None, 50)
-        text = font.render(poke, True, (0, 0, 0))
-        text_x = width // 2 - text.get_width() // 2
-        text_y = height // 2 - text.get_height() // 2
-        text_w = text.get_width()
+        text = font.render(self.text, True, "white")
+        text_x = 250
+        text_y = 660
         text_h = text.get_height()
+
         screen.blit(text, (text_x, text_y))
-        pygame.draw.rect(screen, (0, 255, 0), (text_x - 10, text_y - 10,
-                                               text_w + 20, text_h + 20), 1)
+        pygame.draw.rect(screen, ("blue"), (text_x - 10, text_y - 10,
+                                            450, text_h + 20), 2)
 
     def do_hints(self, screen):  # подсказки
         # Добрыми словами встречаем игрока
@@ -466,20 +468,25 @@ class Window_game:  # Основное окно игры
 
     def open_letter(self, screen):
         slovo = ''
-        print(self.word)
         for r in range(len(self.word)):
             if self.word[r] == self.bykva.lower():
                 slovo = slovo + self.bykva
+            if self.flag_input_word:
+                slovo = self.word
             else:
                 slovo = slovo + self.word_guessed[r]
         self.word_guessed = slovo
-        print(self.word_guessed)
-        text_coord = 225
-        for i in range(0, len(self.word)):
+        for j in range(len(self.word_guessed)):
             font = pygame.font.SysFont("Aria Black", 45)
-            text_word_guessed = font.render(self.word_guessed[i], 1, (0, 0, 0))
-            intro_rect = text_word_guessed.get_rect(center=(955 / 2, text_coord))
+            text_word_guessed = font.render(self.word_guessed[j], 1, (0, 0, 0))
+            intro_rect = (((j + 8 - len(self.word_guessed) // 2 ) * self.cell_size +
+                                                                 self.left) + 15, (2 * self.cell_size + self.top) + 10)
             screen.blit(text_word_guessed, intro_rect)
+
+ #      for letter in self.word_guessed:
+ #           font = pygame.font.SysFont("Aria Black", 45)
+ #           text_word_guessed = font.render(letter, 1, (0, 0, 0))
+  #          screen.blit(text_word_guessed, (len *8 - len(self.word_guessed)//2) + self.cell_size, ))
         pygame.draw.line(screen, (255, 3, 62), (self.x1, self.y1),
                          (self.x1 + 35, self.y1 + 35), 3)
         pygame.draw.line(screen, (255, 3, 62), (self.x1, self.y1 + 35),
@@ -553,13 +560,29 @@ class Window_game:  # Основное окно игры
         if event.type == pygame.KEYDOWN:
             if event.key == 114 or event.key == 82:
                 self.flag += 1
+            if event.key == pygame.K_BACKSPACE:
+                q = len(self.text)
+                self.text = self.text[:q - 1]
+            elif event.unicode in ru_letters:
+                if len(self.text) <= 11:
+                    self.text += event.unicode
+                else:
+                    print("Слово не может быть длинее 11 букв")
+            else:
+                print('Можно вводить только русские буквы')
         x, y = pygame.mouse.get_pos()
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
                 if self.rect.collidepoint(x, y):
-                    #  all_sprites.kill()
+                    baraban.kill()
                     screen_name = name_screens["Second window"]
                     main_game(screen_name)
+                if self.btn_answer.collidepoint(x, y):
+                    if self.text  == self.word:
+                        print("ВЕРНО1111")
+                        self.flag_input_word = True
+                    else:
+                        print("ПОДУМАЙТЕ ЕЩЁ")
             print(event.pos)
             if (510 <= event.pos[1] <= 645 and 230 <= event.pos[0] <= 715):
                 index_num_b = (event.pos[0] - 220 - 10) // 45
@@ -582,16 +605,7 @@ class Window_game:  # Основное окно игры
                 self.bykva = ' '
             print(self.bykva)
 
-        #   if event.key == pygame.K_BACKSPACE:
 
-        #    q = len(self.text)
-        #   self.text = self.text[:q - 1]
-        #  self.test(self, screen, self.text)
-        # elif event.unicode in ru_letters:
-        #  self.text += event.unicode
-        # self.test(sellf, screen, self.text)
-        # else:
-        #    print('Можно вводить только русские буквы')
         if "Вращайте" in self.text_main_clue:
             if self.t + 60 > 355:
                 self.t = 5
@@ -606,6 +620,7 @@ class Window_game:  # Основное окно игры
         self.render_field(screen)
         self.do_hints(screen)
         self.bots()
+        self.test()
         self.open_letter(screen)
         all_sprites.draw(screen)
         # Рисуем курсор для барабана
