@@ -290,7 +290,7 @@ class Difficulty_selection():  # 2 окно меню
 
     def music(self):
         pygame.mixer.music.load('data/menu.mp3')
-        pygame.mixer.music.play(1)
+        pygame.mixer.music.play(-1)
 
 
 class HighScore:  # окно со статистикой
