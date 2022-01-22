@@ -4,6 +4,7 @@ import sys
 import pygame
 import sqlite3
 from random import sample
+import shelve
 
 pygame.init()
 size = width, height = 1200, 800
@@ -15,11 +16,18 @@ FPS = 60
 screen_rect = (0, 0, width, height)
 all_sprites = pygame.sprite.Group()
 
+# заготовки для барабана
 USEREVENT = pygame.K_SPACE
-INTRO_DURATION = random.choice(range(3, 6))  # как долго крутить барабан в секундах
+INTRO_DURATION = random.choice(range(2, 4))  # как долго крутить барабан в секундах
 TICK = USEREVENT + 1
 pygame.time.set_timer(TICK, 1000)  # запускать событие (галочку) каждую секунду
 time_in_seconds = INTRO_DURATION
+# прописывание звуков игры
+sound_hi = pygame.mixer.Sound('data/pole_players.mp3')
+sound_scroll = pygame.mixer.Sound('data/scroll.mp3')
+sound_letter_core = pygame.mixer.Sound('data/pole_letter_correct.mp3')
+sound_letter_wrong = pygame.mixer.Sound('data/pole_letter_wrong.mp3')
+sound_avtomobil = pygame.mixer.Sound('data/avtomobil.mp3')
 
 
 def load_image(name, colorkey=None):  # проверка нахождения картинки в папке data
@@ -58,6 +66,30 @@ def rot_center(image, rect, angle):  # Поворачиваем изображе
     return rot_image, rot_rect
 
 
+"""class Save:
+    def __init__(self):
+        self.file = shelve.open("save")
+
+    def save(self):
+        self.file["input_name"] = input_name_
+
+    def add(self, name, value):
+        self.file[name] = value
+
+    def get(self, name):
+        try:
+            print(self.file[name])
+            print(self.file["input_name"], "___name___")
+           #  print(self.file["max"], "__msxx,,,")
+           #  print(self.file["hs"], "jjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjhjh")
+         #    print(self.file[name], "ну типа")
+        except KeyError:
+            return 0
+
+    def __del__(self):
+        self.file.close()"""
+
+
 class Particle(pygame.sprite.Sprite):  # отображение звёдочек при нажатие на левую клавишу мышки
     # сгенерируем частицы разного размера
     fire = [load_image("star.png")]
@@ -89,13 +121,13 @@ class Particle(pygame.sprite.Sprite):  # отображение звёдочек
             self.kill()
 
 
-class Start_screen():  # 1 окно запуска игры
+class Start_screen:  # 1 окно запуска игры
     def render_start_screen(self):
         # создание фона
         fon = pygame.transform.scale(load_image('fon.jpg'), (width, height))
         # настройка надписи
         font = pygame.font.Font(None, 50)
-        text = font.render("(для продолжения нажмите любую клавишу)", 1, pygame.Color('white'))
+        text = font.render("(для продолжения нажмите любую клавишу)", True, pygame.Color('white'))
         text_rect = text.get_rect(center=(width / 2, height - 50))
         SCREEN.blit(fon, (0, 0))
         SCREEN.blit(text, text_rect)
@@ -104,8 +136,9 @@ class Start_screen():  # 1 окно запуска игры
         if event.type == pygame.QUIT:
             terminate()
         if event.type == pygame.MOUSEBUTTONDOWN:  # создаём частицы по щелчку мыши
-            create_particles(pygame.mouse.get_pos())
+            create_particles(pygame.mouse.get_pos(), 5)
         elif event.type == pygame.KEYDOWN:
+            pygame.mixer.music.stop()
             screen_name = name_screens["Second window"]  # начинаем игру
             main_game(screen_name)
 
@@ -119,16 +152,16 @@ class Start_screen():  # 1 окно запуска игры
         pygame.display.flip()
         clock.tick(FPS)
 
-    def draw(self):
-        pass
+    def music(self):
+        pygame.mixer.music.load('data/opening_old.mp3')
+        pygame.mixer.music.play(1)
 
-    # флаг только при первом вхождение в игру
 
-
+# флаг только при первом вхождение в игру
 FLAG_FIRST = True
 
 
-class Difficulty_selection():  # 2 окно меню
+class Difficulty_selection:  # 2 окно меню
     def get_click(self, mouse_pos):
         x, y = mouse_pos
         # приобразование для упращения
@@ -137,12 +170,14 @@ class Difficulty_selection():  # 2 окно меню
         h0, h1, h2, h3 = self.hard_coords
         # определение на какую клавишу нажато
         if x in range(c0, c0 + c2) and y in range(c1, c1 + c3):
-            self.statistics_window()
+            screen_name = name_screens["HighScore"]
+            main_game(screen_name)
         if x in range(n0, n0 + n2) and y in range(n1, n1 + n3):
             if FLAG_FIRST:
                 screen_name = name_screens["Input_name"]
                 main_game(screen_name)
             else:
+                pygame.mixer.music.stop()
                 screen_name = name_screens["Third window"]
                 main_game(screen_name)
         if x in range(h0, h0 + h2) and y in range(h1, h1 + h3):
@@ -154,7 +189,7 @@ class Difficulty_selection():  # 2 окно меню
         screen.blit(fon, (0, 0))
         # настройка надписи
         font_rule3 = pygame.font.Font(None, 100)
-        hard_text = font_rule3.render("Меню", True, pygame.Color('white'))
+        hard_text = font_rule3.render("Меню", False, pygame.Color('white'))
         hard_cord = hard_text.get_rect(center=(width / 2, 100))
         screen.blit(hard_text, hard_cord)
         # прорисовка кнопок
@@ -167,10 +202,10 @@ class Difficulty_selection():  # 2 окно меню
         # синяя кнопка
         self.customizable_coords = (n_x, n_y, const, const)
         pygame.draw.rect(screen, 'Blue', self.customizable_coords)
-        B_button_text = ["Статистика"]
+        button_text = ["Статистика"]
         text_coord = n_y + const / 4
-        for line in B_button_text:
-            string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
+        for line in button_text:
+            string_rendered = font_button_text.render(line, False, pygame.Color('white'))
             intro_rect = string_rendered.get_rect(center=((n_x + (const / 2), text_coord)))
             text_coord += 40
             screen.blit(string_rendered, intro_rect)
@@ -184,7 +219,7 @@ class Difficulty_selection():  # 2 окно меню
             O_button_text = ["Новая игра"]
         text_coord = n_y + const / 4
         for line in O_button_text:
-            string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
+            string_rendered = font_button_text.render(line, False, pygame.Color('white'))
             intro_rect = string_rendered.get_rect(center=(width / 2, text_coord))
             text_coord += 50
             screen.blit(string_rendered, intro_rect)
@@ -195,27 +230,27 @@ class Difficulty_selection():  # 2 окно меню
         R_button_text = ["Правила"]
         text_coord = n_y + const / 4
         for line in R_button_text:
-            string_rendered = font_button_text.render(line, 1, pygame.Color('white'))
+            string_rendered = font_button_text.render(line, False, pygame.Color('white'))
             intro_rect = string_rendered.get_rect(center=((n_x + (width // 3 * 2)) + const / 2, text_coord))
             text_coord += 50
             screen.blit(string_rendered, intro_rect)
 
     def rules(self):  # окно с правилами игры
         # настройка надписей
-        font_rule = pygame.font.Font(None, 100)
-        rulle_text1 = font_rule.render("Правила игры", True, pygame.Color('red'))
-        rulle_cord1 = rulle_text1.get_rect(center=(width / 2, 150))
+        font_rule = pygame.font.Font(None, 85)
+        rulle_text1 = font_rule.render("Правила игры", False, pygame.Color('red'))
+        rulle_cord1 = rulle_text1.get_rect(center=(width / 2, 50))
 
         font1 = pygame.font.Font(None, 50)
-        text = font1.render("(для продолжения нажмите любую клавишу)", 1, pygame.Color('red'))
+        text = font1.render("(для продолжения нажмите любую клавишу)", False, pygame.Color('red'))
         text_rect = text.get_rect(center=(width / 2, height - 100))
 
         SCREEN.fill("#a7d4d0")
         SCREEN.blit(rulle_text1, rulle_cord1)
         SCREEN.blit(text, text_rect)
 
-        intro_text = ["Вначале каждого раунда Вам необходимо ввести имя.",
-                      "Каждый раунд игры состоит из 5 вопросов, распределённых по уровням.",
+        intro_text = ["Вначале каждого раунда Вам необходимо ввести имя и выбрать уровень.",
+                      "Каждый раунд игры состоит из 3 вопросов, распределённых по уровням.",
                       "На экран выводится вопрос, ответ на который (загаданное слово) скрыт на табло.",
                       "Длина слова известна - каждая скрытая буква отображена на поле сиреневыми квадратиками.",
                       "Выбор буквы осуществляется наведением курсора на соответствующую букву",
@@ -225,10 +260,10 @@ class Difficulty_selection():  # 2 окно меню
                       'и нажмите кнопку "Ответить".',
                       "Основная задача игрока - угадать загаданное слово раньше соперников."]
 
-        font2 = pygame.font.Font(None, 35)
-        text_coord = 250
+        font2 = pygame.font.SysFont("Arial", 30)
+        text_coord = 150
         for line in intro_text:
-            string_rendered = font2.render(line, 1, pygame.Color('black'))
+            string_rendered = font2.render(line, True, pygame.Color('black'))
             intro_rect = string_rendered.get_rect(center=(width / 2, text_coord))
             text_coord += 40
             SCREEN.blit(string_rendered, intro_rect)
@@ -242,30 +277,8 @@ class Difficulty_selection():  # 2 окно меню
             pygame.display.flip()
             clock.tick(FPS)
 
-    def statistics_window(self):  # окно со статистикой
-        # настройка надписи
-        font_rule = pygame.font.Font(None, 100)
-        rulle_text1 = font_rule.render("Статистика", True, pygame.Color('red'))
-        rulle_cord1 = rulle_text1.get_rect(center=(width / 2, 150))
-
-        font1 = pygame.font.Font(None, 50)
-        text = font1.render("(для продолжения нажмите любую клавишу)", 1, pygame.Color('red'))
-        text_rect = text.get_rect(center=(width / 2, height - 100))
-
-        SCREEN.fill("#fdbdba")
-        SCREEN.blit(rulle_text1, rulle_cord1)
-        SCREEN.blit(text, text_rect)
-        # отрисовка окна
-        while True:
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    terminate()
-                elif event.type == pygame.KEYDOWN:
-                    return  # начинаем игру
-            pygame.display.flip()
-            clock.tick(FPS)
-
     def handle_event(self, event):
+        global complexity
         if event.type == pygame.QUIT:
             terminate()
         elif event.type == pygame.MOUSEBUTTONUP:
@@ -282,7 +295,74 @@ class Difficulty_selection():  # 2 окно меню
         pygame.display.flip()
         clock.tick(FPS)
 
-    def draw(self):
+    def music(self):
+        pygame.mixer.music.load('data/menu.mp3')
+        pygame.mixer.music.play(-1)
+
+
+class HighScore:  # окно со статистикой
+    """ def __init__(self, table):
+        self.hs_table = table
+
+    def update_table(self, name, score):
+        self.hs_table[name] = score
+
+    def print(self, x, y):
+        step_x = 250
+        step_y = 30
+        for name, score in self.hs_table.items():
+            font = pygame.font.SysFont('Arial Black', 50)
+            print_name = font.render(name, True, (0, 0, 0))
+            SCREEN.blit(print_name, (x, y))
+            x += step_x
+            print(str(score), x, y)
+            x -= step_x
+            y += step_y   """
+
+    def render_statistics_window(self):
+        # настройка надписи
+        font_rule = pygame.font.Font(None, 75)
+        rulle_text1 = font_rule.render("Статистика", True, pygame.Color('red'))
+        rulle_cord1 = rulle_text1.get_rect(center=(width / 2, 50))
+
+        font1 = pygame.font.Font(None, 45)
+        text = font1.render("(для продолжения нажмите любую клавишу)", True, pygame.Color('red'))
+        text_rect = text.get_rect(center=(width / 2, height - 150))
+
+        hints_input_name = 'Имя'
+        font = pygame.font.SysFont('Arial', 35)
+        hints = font.render(hints_input_name, True, (0, 0, 0))
+
+        hints_input_score = 'Максимальные баллы'
+        hints_score = font.render(hints_input_score, True, (0, 0, 0))
+
+        SCREEN.fill("#fdbdba")
+        SCREEN.blit(rulle_text1, rulle_cord1)
+        SCREEN.blit(text, text_rect)
+        screen.blit(hints, (300, 150))
+        screen.blit(hints_score, (700, 150))
+
+    def handle_event(self, event):
+        if event.type == pygame.QUIT:
+            terminate()
+        elif event.type == pygame.MOUSEBUTTONUP:
+            create_particles(pygame.mouse.get_pos())
+        elif event.type == pygame.KEYDOWN:
+            screen_name = name_screens["Second window"]
+            main_game(screen_name)
+
+    def update(self):  # функция запускающая другие функции
+        all_sprites.update()
+        screen.fill((0, 0, 0))
+
+        self.render_statistics_window()
+        # self.print(40, 200)
+
+        all_sprites.draw(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    def music(self):
         pass
 
 
@@ -298,29 +378,30 @@ class Input_name:  # 3 окно с вводом имени пользовате�
     def render_name_screen(self):
         # создание фона
         fon = pygame.transform.scale(load_image('fon1.jpg'), (width, height))
+        screen.blit(fon, (0, 0))
         # настройка надписи
         font = pygame.font.Font(None, 50)
-        text = font.render('(для продолжения нажмите "OK")', 1, pygame.Color('white'))
+        text = font.render('(для продолжения нажмите "OK")', False, pygame.Color('white'))
         text_rect = text.get_rect(center=(width / 2, height - 50))
         SCREEN.blit(text, text_rect)
-        
+
         pygame.draw.rect(screen, (255, 255, 255), (555, 470, 125, 45), 0)
-        
+
         btn_text_input_word = 'OK'
         font = pygame.font.Font(None, 30)
         btn_text_input = font.render(btn_text_input_word, False, (0, 0, 0))
         screen.blit(btn_text_input, (600, 485))
         self.btn_answer = pygame.Rect(555, 470, 125, 45)
 
-    def do_hints(self, screen):  # подсказки
+    def do_hints(self):  # подсказки
         hints_input_name = 'Введите имя'
         font = pygame.font.SysFont('Arial Black', 50)
-        hints = font.render(hints_input_name, 1, (255, 255, 255))
+        hints = font.render(hints_input_name, True, (255, 255, 255))
         screen.blit(hints, (450, 200))
         if self.flag_len_name:
             text_exit_ = 'Имя не может быть больше 9 символов'
             font = pygame.font.SysFont("Aria", 35)
-            text_hints = font.render(text_exit_, 1, (230, 230, 250))
+            text_hints = font.render(text_exit_, True, (230, 230, 250))
             screen.blit(text_hints, (400, 425))
 
     def test(self):  # функция отображения вводимых данных
@@ -349,7 +430,7 @@ class Input_name:  # 3 окно с вводом имени пользовате�
         if event.type == pygame.MOUSEBUTTONDOWN:
             if pygame.mouse.get_pressed()[0]:
                 if self.btn_answer.collidepoint(x, y):
-                    screen_name = name_screens["Third window"]
+                    screen_name = name_screens["Level_selection"]
                     main_game(screen_name)
 
     def update(self):  # функция запускающая другие функции
@@ -358,32 +439,138 @@ class Input_name:  # 3 окно с вводом имени пользовате�
 
         self.render_name_screen()
         self.test()
-        self.do_hints(screen)
+        self.do_hints()
         all_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
-    def draw(self):
+    def music(self):
         pass
 
 
-# col_question - номер вопроса из пяти возможных вопросов
+# номер уровня из пяти возможных
+level_question = 1
+
+
+class Level_selection:  # 3 окно с вводом имени пользователя
+    def render_level_screen(self):
+        # создание фона
+        fon = pygame.transform.scale(load_image('fon1.jpg'), (width, height))
+        screen.blit(fon, (0, 0))
+        # настройка надписи
+        hints_input_name = 'Выберите уровень'
+        font = pygame.font.SysFont('Arial Black', 50)
+        hints = font.render(hints_input_name, True, (255, 255, 255))
+        screen.blit(hints, (400, 50))
+
+        font = pygame.font.Font(None, 50)
+        text = font.render('(для продолжения выберите уровень)', False, pygame.Color('white'))
+        text_rect = text.get_rect(center=(width / 2, height - 50))
+        SCREEN.blit(text, text_rect)
+
+        pygame.draw.rect(screen, (255, 255, 255), (255, 250, 100, 100), 0)
+
+        btn_text_level_1 = '1'
+        font = pygame.font.Font(None, 65)
+        btn_input_level_1 = font.render(btn_text_level_1, False, (0, 0, 0))
+        screen.blit(btn_input_level_1, (295, 285))
+        self.btn_level_1 = pygame.Rect(255, 250, 100, 100)
+
+        pygame.draw.rect(screen, (255, 255, 255), (555, 250, 100, 100), 0)
+
+        btn_text_level_2 = '2'
+        btn_input_level_2 = font.render(btn_text_level_2, False, (0, 0, 0))
+        screen.blit(btn_input_level_2, (595, 285))
+        self.btn_level_2 = pygame.Rect(555, 250, 100, 100)
+
+        pygame.draw.rect(screen, (255, 255, 255), (855, 250, 100, 100), 0)
+
+        btn_text_level_3 = '3'
+        btn_input_level_3 = font.render(btn_text_level_3, False, (0, 0, 0))
+        screen.blit(btn_input_level_3, (895, 285))
+        self.btn_level_3 = pygame.Rect(855, 250, 100, 100)
+
+        pygame.draw.rect(screen, (255, 255, 255), (355, 450, 100, 100), 0)
+
+        btn_text_level_4 = '4'
+        btn_input_level_4 = font.render(btn_text_level_4, False, (0, 0, 0))
+        screen.blit(btn_input_level_4, (395, 485))
+        self.btn_level_4 = pygame.Rect(355, 450, 100, 100)
+
+        pygame.draw.rect(screen, (255, 255, 255), (755, 450, 100, 100), 0)
+
+        btn_text_level_5 = '5'
+        btn_input_level_5 = font.render(btn_text_level_5, False, (0, 0, 0))
+        screen.blit(btn_input_level_5, (795, 485))
+        self.btn_level_5 = pygame.Rect(755, 450, 100, 100)
+
+    def handle_event(self, event):
+        if event.type == pygame.QUIT:
+            terminate()
+        x, y = pygame.mouse.get_pos()  # запуск следующего окна определение уровня
+        if event.type == pygame.MOUSEBUTTONDOWN:
+            create_particles(pygame.mouse.get_pos())  # создаём частицы по щелчку мыши
+            if pygame.mouse.get_pressed()[0]:
+                global level_question
+                if self.btn_level_1.collidepoint(x, y):
+                    Window_game().qwreading_the_databasea()
+                    pygame.mixer.music.stop()
+                    screen_name = name_screens["Third window"]
+                    main_game(screen_name)
+                if self.btn_level_2.collidepoint(x, y):
+                    level_question = 2
+                    Window_game().qwreading_the_databasea()
+                    pygame.mixer.music.stop()
+                    screen_name = name_screens["Third window"]
+                    main_game(screen_name)
+                if self.btn_level_3.collidepoint(x, y):
+                    level_question = 3
+                    Window_game().qwreading_the_databasea()
+                    pygame.mixer.music.stop()
+                    screen_name = name_screens["Third window"]
+                    main_game(screen_name)
+                if self.btn_level_4.collidepoint(x, y):
+                    level_question = 4
+                    Window_game().qwreading_the_databasea()
+                    pygame.mixer.music.stop()
+                    screen_name = name_screens["Third window"]
+                    main_game(screen_name)
+                if self.btn_level_5.collidepoint(x, y):
+                    level_question = 5
+                    Window_game().qwreading_the_databasea()
+                    pygame.mixer.music.stop()
+                    screen_name = name_screens["Third window"]
+                    main_game(screen_name)
+
+    def update(self):  # функция запускающая другие функции
+        all_sprites.update()
+        SCREEN.fill((0, 0, 0))
+
+        self.render_level_screen()
+        all_sprites.draw(screen)
+        pygame.display.flip()
+        clock.tick(FPS)
+
+    def music(self):
+        pass
+
+
 COL_QUESTION = 1
 # rand - список с числами без повторения
 rand = sample(range(0, 19, 2), 5)
 # Подготовка отображения картинки барабана на основном экране
-img_baraban = load_image('барабан.png')
+img_baraban = load_image('барабан2.png')
 baraban = pygame.sprite.Sprite()
 baraban.image = pygame.transform.scale(img_baraban, (250, 250))
 baraban.rect = baraban.image.get_rect()
 baraban.rect.x = 975
 baraban.rect.y = 525
 # Список никнейм ботов
-spusok_name = ["any123", "АНТОНина", "ДЖОН", "Güneş", "ingquza", "Kirill", "Anastasia", "Маша", "Вика", "дима2019",
+spusok_name = ["any123", "АНТОНина", "ДЖОН", "G?ne?", "ingquza", "Kirill", "Anastasia", "Маша", "Вика", "дима2019",
                "20Максим10", "никита", "ybrbnf", "серый", "лолита:3", "кошка", "Женя"]
 # Словарь для связи картинки (аватарки) и никнейма ботов
 photo_spusok_name = {"any123": "Photo_girl1.png", "АНТОНина": "Photo_girl2.jpg", "ДЖОН": "Photo_boy2.jpg",
-                     "Güneş": "Photo_girl3.png", "ingquza": "Photo_girl2.jpg", "Kirill": 'Photo_boy3.png',
+                     "G?ne?": "Photo_girl3.png", "ingquza": "Photo_girl2.jpg", "Kirill": 'Photo_boy3.png',
                      "Anastasia": "Photo_girl1.png", "Маша": "Photo_girl3.png", "Вика": "Photo_girl1.png",
                      "дима2019": "Photo_boy3.png", "20Максим10": "Photo_boy2.jpg",
                      "никита": "Photo_boy2.jpg", "ybrbnf": "Photo_name_1.jpg", "серый": "Photo_name_1.jpg",
@@ -407,7 +594,7 @@ col_mark_2_robot = 0
 
 class Window_game:  # Основное окно игры
     def __init__(self):  # Инцилизация класса
-        global INTRO_DURATION, time_in_seconds, TICK, USEREVENT, col_mark_gamer, col_mark_1_robot, col_mark_2_robot
+        global INTRO_DURATION, time_in_seconds, TICK, USEREVENT, col_mark_1_robot, col_mark_2_robot, col_mark_gamer
         # отрисовка поля
         self._ww = 16
         self._hh = 5
@@ -421,8 +608,8 @@ class Window_game:  # Основное окно игры
         # подсчёт баллов
         self.t = 5
         self.col_mark = 0
-        self.col_mark_1_robot = 0
-        self.col_mark_2_robot = 0
+        self.col_mark_1_robot = col_mark_1_robot
+        self.col_mark_2_robot = col_mark_2_robot
         self.flag = 0  # флаг регулирующий логику игры
         self.bykva = ""  # ввод слова по буквам
         self.text = ""  # ввод слова целиком
@@ -433,31 +620,52 @@ class Window_game:  # Основное окно игры
         self.flag_gamer_choice = False
         self.flag_random = False
         self.flag_first = True
+        self.flag_new_level = True
         # Заготовки для барабана
         self.flag_baraban = True
         self.intro_duration = INTRO_DURATION
         self.time_in_seconds = time_in_seconds
         self.tick = TICK
         self.userevent = USEREVENT
+        self.scroll_flag = False
+        # флаги для звуков
+        self.flag_sound_hi = True
+        self.flag_sound_hi_2 = True
+        self.flag_sound_scroll = True
+        self.flag_sound_letter_wrong = True
+        self.flag_sound_letter_core = True
+        self.questionn1 = 'a'
+        self.word = "a"
+        self.word_guessed = ""
+        # сохранение
+        """self.save_file = Save()
+        self.max_col_mark_gamer = 0
+        self.higt_score = HighScore(self.save_file.get("hs"))
+        self.save_file.add("hs", {})
+        self.save_file.get("hs")  """
+
+    def qwreading_the_databasea(self):
+        global level_question
         # Из базы данных отбираем записи (слова и вопросы)
         con = sqlite3.connect("questions_db (2).sqlite")
         cur = con.cursor()
         word11 = cur.execute(f"""SELECT questionandword.woords, questionandword.qquestion
-                           FROM questionandword, level JOIN level_question
-                           ON questionandword.num = level_question.id_question AND
-                           level.id = level_question.id_level
-                           WHERE id_level = {COL_QUESTION}""").fetchall()
+                                   FROM questionandword, level JOIN level_question
+                                   ON questionandword.num = level_question.id_question AND
+                                   level.id = level_question.id_level
+                                   WHERE id_level = {level_question}""").fetchall()
         con.close()
         word_question = []
-        self.questionn1 = ''
         for i in word11:
             for j in i:
                 word_question.append(j)
         # Из полученной выборки случайным образом определяем пару загаданное слово и вопрос к нему
         # Загаданное слово word и вопрос относящийся к нему questionn1
-        self.word = word_question[rand[COL_QUESTION - 1]]
-        self.questionn1 = word_question[rand[COL_QUESTION - 1] + 1]
-        self.word_guessed = len(self.word) * " "
+        word = word_question[rand[COL_QUESTION - 1]]
+        questionn1 = word_question[rand[COL_QUESTION - 1] + 1]
+        word_guessed = len(word) * " "
+
+        return word, questionn1, word_guessed
 
     def render_field(self, screen):  # рендер окна
         # Рисуем основное поле с загаданным словом
@@ -522,17 +730,20 @@ class Window_game:  # Основное окно игры
             c += 45
         text_input_word = 'Скажите букву или слово целиком'
         font = pygame.font.SysFont('Consolas', 20)
-        text_input = font.render(text_input_word, 3, (0, 0, 0))
+        text_input = font.render(text_input_word, True, (0, 0, 0))
         screen.blit(text_input, (290, 465))
         pygame.draw.rect(screen, (255, 255, 255), (400, 715, 125, 45), 0)
         btn_text_input_word = 'Ответить'
-        font = pygame.font.Font(None, 30)
-        btn_text_input = font.render(btn_text_input_word, False, (0, 0, 0))
+        font1 = pygame.font.Font(None, 30)
+        btn_text_input = font1.render(btn_text_input_word, False, (0, 0, 0))
         screen.blit(btn_text_input, (415, 730))
         self.btn_answer = pygame.Rect(400, 715, 125, 45)
 
     def question_and_word(self, screen):  # Вывод вопроса и слова на экран
         # Выводим вопрос на экран
+        if self.flag_new_level:
+            self.word, self.questionn1, self.word_guessed = self.qwreading_the_databasea()
+            self.flag_new_level = False
         self.question = []
         if len(self.questionn1) >= 66:
             s = self.questionn1[:66]
@@ -546,7 +757,7 @@ class Window_game:  # Основное окно игры
         text_coord = 35
         for line in self.question:
             font = pygame.font.SysFont('Consolas', 25)
-            string_rendered = font.render(line, 1, pygame.Color('black'))
+            string_rendered = font.render(line, True, pygame.Color('black'))
             intro_rect = string_rendered.get_rect(center=(width / 2, text_coord))
             text_coord += 30
             SCREEN.blit(string_rendered, intro_rect)
@@ -568,25 +779,35 @@ class Window_game:  # Основное окно игры
                                             450, text_h + 20), 2)
 
     def do_hints(self, screen):  # подсказки
+        if self.flag_sound_hi:
+            sound_hi.play()
+            self.flag_sound_hi = False
         # Добрыми словами встречаем игрока
         hints_welcome = 'Тройка игроков в студию!'
         font = pygame.font.SysFont('Arial Black', 28)
-        text_welcome = font.render(hints_welcome, False, (0, 0, 0))
+        text_welcome = font.render(hints_welcome, True, (0, 0, 0))
         global FLAG_FIRST
         if self.flag == 0 and FLAG_FIRST:
             screen.blit(text_welcome, (400, 355))
         # Продожить игру можно при нажатие на клавиатуре пробел
         text_exit_start = 'Чтобы продолжить нажмите клавишу [пробел]'
-        font = pygame.font.SysFont("Aria", 25)
-        text_start = font.render(text_exit_start, 1, (159, 129, 112))
+        font1 = pygame.font.SysFont("Aria", 25)
+        text_start = font1.render(text_exit_start, True, (159, 129, 112))
         screen.blit(text_start, (430, 400))
         # Выводим имя пользователя, чтобы не забыл
         global input_name_
-        font = pygame.font.SysFont('Arial Black', 22)
-        text = font.render(input_name_, 1, (0, 0, 0))
+        font_name = pygame.font.SysFont('Arial Black', 22)
+        text = font_name.render(input_name_, True, (0, 0, 0))
         screen.blit(text, (1050, 55))
-
+        global col_mark_1_robot, col_mark_2_robot, col_mark_gamer
         if self.flag == 1:  # проверяем флаг и выводим нужное имя игрока
+            sound_hi.stop()
+            if self.flag_sound_scroll:
+                sound_scroll.play()
+                self.flag_sound_scroll = False
+            self.flag_sound_letter_wrong = True
+            self.flag_sound_letter_core = True
+
             self.text = ""
             FLAG_FIRST = False
             if self.flag1_bot_choice:
@@ -595,15 +816,15 @@ class Window_game:  # Основное окно игры
                 self.text_main_clue = f'{spusok_name[random_number[1]]}, вращайте барабан'
             if self.flag_gamer_choice:
                 self.text_main_clue = f'{input_name_}, вращайте барабан'
-            font = pygame.font.SysFont('Arial Black', 28)
-            text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+            text_clue = font.render(self.text_main_clue, True, (0, 0, 0))
             screen.blit(text_clue, (400, 355))
             self.bykva = ''
 
         if self.flag == 2:
-            self.text_main_clue = f'выберите букву'
-            font = pygame.font.SysFont('Arial Black', 24)
-            text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+            self.flag_sound_scroll = True
+            self.text_main_clue = 'Выберите букву'
+            font2 = pygame.font.SysFont('Arial Black', 24)
+            text_clue = font2.render(self.text_main_clue, True, (0, 0, 0))
             screen.blit(text_clue, (495, 355))
             if self.flag1_bot_choice or self.flag2_bot_choice:
                 self.flag_random = True
@@ -624,50 +845,63 @@ class Window_game:  # Основное окно игры
                 self.flag = 5
 
         if self.flag == 4:  # выводит подсказку если буква правильная и суммируем баллы
+            if self.flag_sound_letter_core:
+                sound_letter_core.play()
+                self.flag_sound_letter_core = False
             self.text_main_clue = 'Вы отгадали одну букву!'
-            font = pygame.font.SysFont('Arial Black', 24)
-            text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+            font2 = pygame.font.SysFont('Arial Black', 24)
+            text_clue = font2.render(self.text_main_clue, True, (0, 0, 0))
             screen.blit(text_clue, (495, 355))
             if self.flag1_bot_choice:
-                global col_mark_1_robot
                 col_mark_1_robot += self.col_mark
+                self.col_mark_1_robot += self.col_mark
                 self.col_mark = 0
             if self.flag2_bot_choice:
-                global col_mark_2_robot
                 col_mark_2_robot += self.col_mark
+                self.col_mark_2_robot += self.col_mark
                 self.col_mark = 0
             if self.flag_gamer_choice:
-                global col_mark_gamer
                 col_mark_gamer += self.col_mark
                 self.col_mark = 0
 
-        if self.flag == 5:  # выводит подсказку если буква не пправильная
+        if self.flag == 5:  # выводит подсказку если буква не правильная
+            if self.flag_sound_letter_wrong:
+                sound_letter_wrong.play()
+                self.flag_sound_letter_wrong = False
             self.text_main_clue = 'Такой буквы в слове нет!'
-            font = pygame.font.SysFont('Arial Black', 24)
-            text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+            font5 = pygame.font.SysFont('Arial Black', 24)
+            text_clue = font5.render(self.text_main_clue, True, (0, 0, 0))
             screen.blit(text_clue, (450, 355))
+            self.col_mark = 0
 
         if self.flag == 6:  # выводим подсказку если Вы отгадали слово
+            if self.flag_sound_hi_2:
+                sound_hi.play()
+                self.flag_sound_hi_2 = False
+
             self.text_main_clue = 'ВЫ ОТГАДАЛИ СЛОВО!'
-            font = pygame.font.SysFont('Arial Black', 24)
-            text_clue = font.render(self.text_main_clue, 1, (0, 0, 0))
+            font6 = pygame.font.SysFont('Arial Black', 24)
+            text_clue = font6.render(self.text_main_clue, True, (0, 0, 0))
             screen.blit(text_clue, (400, 355))
-            print(self.flag, "флаг сол")
+            if self.flag1_bot_choice:
+                col_mark_1_robot += self.col_mark
+                self.col_mark_1_robot += self.col_mark
+                self.col_mark = 0
+            if self.flag2_bot_choice:
+                col_mark_2_robot += self.col_mark
+                self.col_mark_2_robot += self.col_mark
+                self.col_mark = 0
+            if self.flag_gamer_choice:
+                col_mark_gamer += self.col_mark
+                self.col_mark = 0
 
         if self.flag == 8:  # выводим подсказку если вводное слово не верное
             text_n0_guessed = 'Подумайте ещё'
-            font = pygame.font.SysFont('Arial Black', 24)
-            n0_guessed = font.render(text_n0_guessed, 1, (0, 0, 0))
+            font8 = pygame.font.SysFont('Arial Black', 24)
+            n0_guessed = font8.render(text_n0_guessed, True, (0, 0, 0))
             screen.blit(n0_guessed, (450, 355))
             self.flag_gamer_choice = False
             self.flag2_bot_choice = True
-
-    # def btn_next_question(self, screen):
-    #    pygame.draw.rect(screen, (102, 0, 255), (1000, 0, 225, 50), 0)
-    #   text_next_question = 'Следующий вопрос'
-    #  font = pygame.font.Font(None, 25)
-    #   text = font.render(text_next_question, False, (255, 204, 0))
-    #  screen.blit(text, (1020, 15))
 
     def open_letter(self, screen):  # открываем на поле угаданое слово
         slovo = ''
@@ -681,14 +915,14 @@ class Window_game:  # Основное окно игры
         self.word_guessed = slovo
         for j in range(len(self.word_guessed)):
             font = pygame.font.SysFont("Aria Black", 45)
-            text_word_guessed = font.render(self.word_guessed[j], 1, (0, 0, 0))
+            text_word_guessed = font.render(self.word_guessed[j], True, (0, 0, 0))
             intro_rect = (((j + 8 - len(self.word_guessed) // 2) * self.cell_size +
                            self.left) + 15, (2 * self.cell_size + self.top) + 10)
             screen.blit(text_word_guessed, intro_rect)
         if self.word_guessed.lower() == self.word:
             self.flag = 6
 
-    def bots(self):  # Отображаем на эране оботов (аватарка + никнейм)
+    def bots(self, screen):  # Отображаем на эране оботов (аватарка + никнейм)
         # Рисуем фон аватарки
         pygame.draw.circle(screen, (255, 255, 255), (75, 525), 55)
         pygame.draw.circle(screen, (255, 255, 255), (75, 690), 55)
@@ -704,11 +938,10 @@ class Window_game:  # Основное окно игры
         screen.blit(picture2, rect)
         # Подписываем
         font = pygame.font.SysFont('Arial Black', 16)
-        text = font.render(spusok_name[random_number[0]], 1, (0, 0, 0))
+        text = font.render(spusok_name[random_number[0]], False, (0, 0, 0))
         screen.blit(text, (45, 450))
 
-        font = pygame.font.SysFont('Arial Black', 16)
-        text = font.render(spusok_name[random_number[1]], 1, (0, 0, 0))
+        text = font.render(spusok_name[random_number[1]], False, (0, 0, 0))
         screen.blit(text, (45, 615))
         # Отображаем счётчик баллов батов
         pygame.draw.rect(screen, (102, 0, 255), (35, 575, 75, 25), 0)
@@ -717,7 +950,7 @@ class Window_game:  # Основное окно игры
         font = pygame.font.Font(None, 35)
         text = font.render(str(self.col_mark_1_robot), False, (255, 204, 0))
         screen.blit(text, (45, 577))
-        font = pygame.font.Font(None, 35)
+
         text = font.render(str(self.col_mark_2_robot), False, (255, 204, 0))
         screen.blit(text, (45, 742))
 
@@ -748,26 +981,26 @@ class Window_game:  # Основное окно игры
                 else:
                     self.flag_random = True
 
-    def scoring(self, angle):  # Подсчёт баллов за уровень
-        if angle == 5 or angle == 185: return 'Б'
+    def scoring(self, angle):  # Подсчёт баллов за прокрутку барабана
+        if angle == 5 or angle == 185: return '450'
         if angle == 15 or angle == 195: return "700"
         if angle == 25 or angle == 205: return "850"
-        if angle == 35 or angle == 215: return 'П'
+        if angle == 35 or angle == 215: return '150'
         if angle == 45 or angle == 225: return "600"
         if angle == 55 or angle == 235: return "450"
-        if angle == 65 or angle == 245: return 'х2'
+        if angle == 65 or angle == 245: return '250'
         if angle == 75 or angle == 255: return "800"
         if angle == 85 or angle == 265: return "950"
-        if angle == 95 or angle == 275: return '+'
+        if angle == 95 or angle == 275: return '200'
         if angle == 105 or angle == 285: return "400"
         if angle == 115 or angle == 295: return "650"
-        if angle == 125 or angle == 305: return "0"
+        if angle == 125 or angle == 305: return "10"
         if angle == 135 or angle == 315: return "500"
         if angle == 145 or angle == 325: return "750"
         if angle == 165 or angle == 345: return "350"
         if angle == 175 or angle == 355: return "1000"
-        if angle == 155: return 'КЛЮЧ'
-        if angle == 335: return 'Ш'
+        if angle == 155: return '500'
+        if angle == 335: return '100'
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
@@ -778,7 +1011,7 @@ class Window_game:  # Основное окно игры
 
         if event.type == pygame.KEYDOWN:
             # продолжение игры при нажатии на пробел
-            if event.key == 32:
+            if event.key == pygame.K_SPACE and self.scroll_flag == False:
                 if self.flag == 2 and not self.flag_gamer_choice:
                     self.flag += 1
 
@@ -793,22 +1026,27 @@ class Window_game:  # Основное окно игры
                     self.flag = 1
 
                 if self.flag == 7:  # переходим на следующий уровень если слово угадано
-                    print("оооооооооооооооооооооооооооооооооооооооооооооооооооооооо")
                     global COL_QUESTION
                     COL_QUESTION += 1
-                    if COL_QUESTION == 6:
+                    self.__init__()
+                    if COL_QUESTION == 4:
                         baraban.kill()
+                        pygame.mixer.music.stop()
                         screen_name = name_screens["Enb_window"]
                         main_game(screen_name)
-                    self.__init__()
+                    """"  self.save_file.save()
+                        self.max_col_mark_gamer = col_mark_gamer
+                        self.higt_score.update_table(input_name_, self.max_col_mark_gamer)
+                        self.save_file.add("max", self.max_col_mark_gamer)
+                        self.save_file.add("hs", self.higt_score.hs_table)  """
 
             if self.flag == 1:
-                # выставляем случайное время кручения барадана и делаем флаг
+                # выставляем случайное время кручения барабана и делаем флаг
                 if event.type == pygame.KEYDOWN:
-                    self.intro_duration = random.choice(range(3, 6))
-                    self.flag_baraban = True
-                    print("Барабанчик крутись вертись!")
-                    self.time_in_seconds = 0
+                    if event.key == pygame.K_SPACE:
+                        self.intro_duration = random.choice(range(2, 4))
+                        self.flag_baraban = True
+                        self.time_in_seconds = 0
 
             #  считывание вводных данных с клавиатуры
             if event.key == pygame.K_BACKSPACE:
@@ -824,6 +1062,8 @@ class Window_game:  # Основное окно игры
                 # выход из основного окна игры в меню
                 if self.btn_exit.collidepoint(x, y):
                     baraban.kill()
+                    global FLAG_FIRST
+                    FLAG_FIRST = False
                     screen_name = name_screens["Second window"]
                     main_game(screen_name)
                 # считываем и перерабатываем вводное слово
@@ -862,9 +1102,10 @@ class Window_game:  # Основное окно игры
 
         self.render_field(screen)
         self.do_hints(screen)
-        self.bots()
+        self.bots(screen)
         self.test()
         self.open_letter(screen)
+        self.qwreading_the_databasea()
 
         # вращение барабана
         if self.time_in_seconds < self.intro_duration:
@@ -872,28 +1113,14 @@ class Window_game:  # Основное окно игры
                 self.t = 5
             else:
                 self.t += 10
+            self.scroll_flag = True
             baraban.image, baraban.rect = rot_center(img_baraban, baraban.rect, self.t)
+        # то что происходит после прокрутки барабана
         elif self.time_in_seconds == self.intro_duration:
             if self.flag_baraban:
-                print(self.flag, "флагггггггг")
-                if self.scoring(self.t).isdigit() and self.scoring(self.t) != "0":
-                    self.col_mark = int(self.scoring(self.t))
-                    print(self.col_mark)
-                if self.scoring(self.t) == "0":
-                    print("ecnfkm")
-                    if self.flag1_bot_choice:
-                        self.flag1_bot_choice = False
-                        self.flag_gamer_choice = True
-                        self.flag = 1
-                    elif self.flag_gamer_choice:
-                        self.flag_gamer_choice = False
-                        self.flag2_bot_choice = True
-                        self.flag = 1
-                    elif self.flag2_bot_choice:
-                        self.flag2_bot_choice = False
-                        self.flag1_bot_choice = True
-                        self.flag = 1
-                print(self.scoring(self.t))
+                sound_scroll.stop()
+                self.col_mark = int(self.scoring(self.t))
+                self.scroll_flag = False
                 self.flag_baraban = False
 
         all_sprites.draw(screen)
@@ -903,62 +1130,128 @@ class Window_game:  # Основное окно игры
         pygame.display.flip()
         clock.tick(FPS)
 
-    def draw(self):
+    def music(self):
         pass
 
 
-class Enb_window:
-    def render_start_screen(self):
-        SCREEN.fill("#fddb6d")
+# заготовки для машинки
+img_car = load_image('машинка2.png')
+car = pygame.sprite.Sprite()
+car.image = pygame.transform.scale(img_car, (400, 400))
+car.rect = car.image.get_rect(center=(width / 2, height / 10 * 7))
+MYEVENTTYPE = pygame.USEREVENT + 1
+pygame.time.set_timer(MYEVENTTYPE, 10)
 
+
+class Enb_window:
+    def __init__(self):
+        # заготовки для машинки
+        self.flag = False
+        all_sprites.add(car)
+        self.flag_sound_avtomobil = True
+        self.flag_won = False
+
+    def render_start_screen(self):
+        fon = pygame.transform.scale(load_image('win.jpg'), (width, height))
+        SCREEN.blit(fon, (0, 0))
         # настройка надписи
-        font = pygame.font.Font(None, 50)
-        text = font.render(f"Поздравляю вы набрали {col_mark_gamer} очков", 1, pygame.Color('white'))
+        font = pygame.font.Font(None, 80)
+        text = font.render(f"Поздравляю вы набрали {col_mark_gamer} очков!", False, pygame.Color('white'))
         text_rect = text.get_rect(center=(width / 2, height / 10 * 3))
-        SCREEN.fill((0, 0, 0))
         SCREEN.blit(text, text_rect)
-        
+
         font = pygame.font.Font(None, 50)
-        text_btn = font.render('(для возвращения в меню нажмите любую клавишу)', 1, pygame.Color('white'))
-        text_ = text.get_rect(center=(width / 2, height - 50))
-        SCREEN.blit(text_, text_btn)
+        text1 = font.render('(для возвращения в меню нажмите любую клавишу)', False, pygame.Color('#00FA9A'))
+        text_btn = text1.get_rect(center=(width / 2, height / 10 * 9))
+        SCREEN.blit(text1, text_btn)
+
+        if col_mark_gamer >= 5000:
+            self.won()
+        else:
+            self.not_won()
+
+    def not_won(self):
+        font = pygame.font.Font(None, 50)
+        text2 = font.render("К сожалению вы не набрали 10000 очков для приза", True, pygame.Color('white'))
+        text_btn = text2.get_rect(center=(width / 2, height / 10 * 4))
+        SCREEN.blit(text2, text_btn)
+
+        text3 = font.render("Вы можете попробовать снова!", True, pygame.Color('white'))
+        text_btn = text3.get_rect(center=(width / 2, height / 10 * 5))
+        SCREEN.blit(text3, text_btn)
+
+        self.flag_won = False
+
+    def won(self):
+        if self.flag_sound_avtomobil:
+            sound_avtomobil.play()
+            self.flag_sound_avtomobil = False
+
+        font = pygame.font.Font(None, 50)
+        text2 = font.render("И вы выигрываете автомобиль!!!", True, pygame.Color('white'))
+        text_btn = text2.get_rect(center=(width / 2, height / 10 * 4))
+        SCREEN.blit(text2, text_btn)
+
+        text3 = font.render("Спасибо за игру)", True, pygame.Color('white'))
+        text_btn = text3.get_rect(center=(width / 2, height / 10 * 5))
+        SCREEN.blit(text3, text_btn)
+        self.flag_won = True
 
     def handle_event(self, event):
         if event.type == pygame.QUIT:
             terminate()
+        if event.type == MYEVENTTYPE and self.flag_won:
+            if car.rect.x <= 10:
+                self.flag = True
+                car.image = pygame.transform.flip(car.image, True, False)
+            if car.rect.x == height - 10:
+                self.flag = False
+                car.image = pygame.transform.flip(car.image, True, False)
+            if self.flag == True:
+                car.rect.x += 5
+            else:
+                car.rect.x -= 5
+
         if event.type == pygame.MOUSEBUTTONDOWN:  # создаём частицы по щелчку мыши
             create_particles(pygame.mouse.get_pos())
         elif event.type == pygame.KEYDOWN:
+            car.kill()
             screen_name = name_screens["Second window"]
             main_game(screen_name)
 
     def update(self):  # функция запускающая другие функции
         all_sprites.update()
-        SCREEN.fill((0, 0, 0))
+        SCREEN.fill("#3CB371")
 
         self.render_start_screen()
 
-        all_sprites.draw(screen)
+        if self.flag_won:
+            all_sprites.draw(screen)
         pygame.display.flip()
         clock.tick(FPS)
 
-    def draw(self):
-        pass
+    def music(self):
+        pygame.mixer.music.load('data/winner-of-tour.mp3')
+        pygame.mixer.music.play(1)
 
 
 name_screens = {"First window": Start_screen(), "Second window": Difficulty_selection(), "Input_name": Input_name(),
-                "Third window": Window_game(), "Enb_window": Enb_window()}
+                "Level_selection": Level_selection(), "Third window": Window_game(), "Enb_window": Enb_window(),
+                "HighScore": HighScore()}
+# костыль
+if col_mark_gamer < 5000:
+    car.kill()
 
 screen_name = name_screens["First window"]
 
 
 def main_game(screen_name):
     running = True
+    screen_name.music()
     while running:
         for event in pygame.event.get():
             screen_name.handle_event(event)
         screen_name.update()
-        screen_name.draw()
         pygame.display.flip()
         clock.tick(50)
     pygame.quit()
